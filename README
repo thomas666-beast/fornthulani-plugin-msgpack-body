@@ -1,0 +1,128 @@
+fornthulani-plugin-msgpack-body
+===============================
+
+MessagePack body parsing for the
+[fornthulani](https://crates.io/crates/fornthulani) micro HTTP framework.
+
+Adds one method to every `Request`:
+
+    req.msgpack::<T>()  ->  Result<T, ThulaniError>
+
+
+----------------------------------------------------------------------
+INSTALL
+----------------------------------------------------------------------
+
+  [dependencies]
+  fornthulani = "0.1.0"
+  fornthulani-plugin-msgpack-body = "0.1.0"
+
+
+----------------------------------------------------------------------
+USE
+----------------------------------------------------------------------
+
+  use serde::Deserialize;
+  use fornthulani::{Params, Request, Response, Status, ThulaniError};
+  use fornthulani_plugin_msgpack_body::MsgPackBody;
+
+  #[derive(Deserialize)]
+  struct NewUser {
+      name: String,
+      email: String,
+  }
+
+  fn create_user(req: &Request, _: &Params) -> Result<Response, ThulaniError> {
+      let input: NewUser = req.msgpack()?;
+      Ok(Response::json(Status::CREATED, &input))
+  }
+
+Register the controller the usual way:
+
+  router.post("/users", create_user);
+
+
+----------------------------------------------------------------------
+BEHAVIOUR
+----------------------------------------------------------------------
+
+  Content-Type not application/msgpack or application/x-msgpack
+      ->  Err(ThulaniError::BadRequest) with 400
+          "expected Content-Type: application/msgpack, got `<ct>`"
+
+  Empty body
+      ->  Err(ThulaniError::BadRequest) with 400
+          "empty body"
+
+  Body is not valid MessagePack
+      ->  Err(ThulaniError::BadRequest) with 400
+          "invalid msgpack: <parse error>"
+
+  Otherwise
+      ->  Ok(T)
+
+
+----------------------------------------------------------------------
+TESTING
+----------------------------------------------------------------------
+
+  cargo test
+
+Three integration tests, all passing end-to-end through the server:
+
+  accepts_valid_msgpack
+  rejects_wrong_content_type
+  rejects_invalid_msgpack
+
+The doc-test in src/lib.rs is compiled (no_run) so the usage pattern
+above is validated on every `cargo test`.
+
+
+----------------------------------------------------------------------
+DESIGN
+----------------------------------------------------------------------
+
+Like its JSON sibling, this crate does NOT implement
+fornthulani::Middleware.
+
+Body parsing is a controller-side capability: it only runs when a
+controller asks for it with `req.msgpack()`. Middleware is for
+lifecycle hooks (auth, logging, CORS). Keeping the two separate means:
+
+  - No runtime cost unless a handler calls `.msgpack()`.
+  - Zero changes to fornthulani core.
+  - 30 lines of code you can read in a minute.
+
+The plugin uses the `path` + `version` form in Cargo.toml:
+
+  fornthulani = { path = "../fornthulani", version = "0.1.0" }
+
+Cargo uses the path when building locally and the version when
+publishing, which is the correct shape for a publishable crate whose
+library is developed in a sibling folder.
+
+
+----------------------------------------------------------------------
+COMPANION PLUGINS
+----------------------------------------------------------------------
+
+  fornthulani-plugin-json-body      req.json::<T>()
+  fornthulani-plugin-msgpack-body   req.msgpack::<T>()   (this crate)
+
+Future plugins in the same family:
+
+  fornthulani-plugin-cors           CORS middleware
+  fornthulani-plugin-auth           auth middleware
+  fornthulani-plugin-logging        request/response logging
+  fornthulani-plugin-multipart      multipart/form-data bodies
+  fornthulani-plugin-query          query string parsing
+
+Each lives in its own repository and publishes independently.
+None of them touch fornthulani/src/.
+
+
+----------------------------------------------------------------------
+LICENSE
+----------------------------------------------------------------------
+
+Dual-licensed under MIT or Apache-2.0, at your option.
