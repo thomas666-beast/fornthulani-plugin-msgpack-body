@@ -1,0 +1,17 @@
+[package]
+name = "fornthulani-plugin-msgpack-body"
+version = "0.1.0-alpha1"
+edition = "2021"
+description = "MessagePack body parsing plugin for the fornthulani micro HTTP framework."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/thomas666-beast/fornthulani-plugin-msgpack-body"
+keywords = ["fornthulani", "msgpack", "plugin", "http"]
+categories = ["web-programming::http-server"]
+
+[dependencies]
+fornthulani = { path = "../fornthulani", version = "0.1.0" }
+serde = { version = "1", features = ["derive"] }
+rmp-serde = "1"
+
+[dev-dependencies]
+reqwest = { version = "0.12", features = ["blocking", "json"] }
